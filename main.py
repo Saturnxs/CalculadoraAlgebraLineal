@@ -1,8 +1,12 @@
+# Importar fracciones para manejar números racionales
 from fractions import Fraction
 
 
-# Utilidades
-def create_matrix(filas, columnas, datos):
+######################################################
+##################### Utilidades #####################
+######################################################
+
+def nueva_matriz(filas, columnas, datos):
     return {
         'filas': filas,
         'columnas': columnas,
@@ -10,7 +14,12 @@ def create_matrix(filas, columnas, datos):
     }
 
 
-def matrix_to_str(matriz):
+def duplicar_matriz(matriz):
+    return nueva_matriz(matriz['filas'], matriz['columnas'],
+                         [fila[:] for fila in matriz['datos']])
+
+
+def matriz_string(matriz):
     return '\n'.join([' '.join(map(str, fila)) for fila in matriz['datos']])
 
 
@@ -26,8 +35,7 @@ def input_matriz(contador = 0):
             matriz = []
             for i in range(filas):
                 while True:
-                    fila = input(
-                        f"Ingrese los números de la fila {i + 1} separados por un espacio (ejemplo: {' '.join(['#'] * columnas)}) si desea dejar espacios vacios escriba 0: ").split()
+                    fila = input(f"Ingrese los números de la fila {i + 1} separados por un espacio (ejemplo: {' '.join(['#'] * columnas)}) si desea dejar espacios vacios escriba 0: ").split()
                     if len(fila) != columnas:
                         print(f"Debes ingresar exactamente {columnas} números")
                         continue
@@ -36,12 +44,12 @@ def input_matriz(contador = 0):
                         break
                     except ValueError:
                         print("Formato no válido")
-            return create_matrix(filas, columnas, matriz)
+            return nueva_matriz(filas, columnas, matriz)
         except ValueError:
             print("Las dimensiones deben ser un número positivo y entero")
 
 
-def get_escalar():
+def input_escalar():
     while True:
         try:
             return float(input("Ingrese el valor del escalar: "))
@@ -49,8 +57,11 @@ def get_escalar():
             print("Valor no válido")
 
 
-# Funciones de álgebra lineal
-def suma_matrices(matriz1, matriz2):
+######################################################
+################ Funciones Algebraicas ###############
+######################################################
+
+def sumar_matrices(matriz1, matriz2):
     if matriz1['filas'] != matriz2['filas'] or matriz1['columnas'] != matriz2['columnas']:
         raise ValueError("Matrices deben tener las mismas dimensiones")
 
@@ -58,10 +69,10 @@ def suma_matrices(matriz1, matriz2):
         [matriz1['datos'][i][j] + matriz2['datos'][i][j] for j in range(matriz1['columnas'])]
         for i in range(matriz1['filas'])
     ]
-    return create_matrix(matriz1['filas'], matriz1['columnas'], resultado)
+    return nueva_matriz(matriz1['filas'], matriz1['columnas'], resultado)
 
 
-def resta_matrices(matriz1, matriz2):
+def restar_matrices(matriz1, matriz2):
     if matriz1['filas'] != matriz2['filas'] or matriz1['columnas'] != matriz2['columnas']:
         raise ValueError("Matrices deben tener las mismas dimensiones")
 
@@ -69,12 +80,12 @@ def resta_matrices(matriz1, matriz2):
         [matriz1['datos'][i][j] - matriz2['datos'][i][j] for j in range(matriz1['columnas'])]
         for i in range(matriz1['filas'])
     ]
-    return create_matrix(matriz1['filas'], matriz1['columnas'], resultado)
+    return nueva_matriz(matriz1['filas'], matriz1['columnas'], resultado)
 
 
 def multiplicar_matrices(matriz1, matriz2):
     if matriz1['columnas'] != matriz2['filas']:
-        raise ValueError("El # de columnas de la primera matriz deben == al numero de filas de la segunda matriz")
+        raise ValueError("El número de columnas de la primera matriz deben == al numero de filas de la segunda matriz")
 
     resultado = []
     explicacion = []
@@ -92,18 +103,18 @@ def multiplicar_matrices(matriz1, matriz2):
             explicacion.append(f"Elemento [{i + 1},{j + 1}]: {' + '.join(pasos)} = {total}")
         resultado.append(fila)
 
-    return create_matrix(matriz1['filas'], matriz2['columnas'], resultado), explicacion
+    return nueva_matriz(matriz1['filas'], matriz2['columnas'], resultado), explicacion
 
 
-def multiplicacion_escalar(matriz, escalar):
+def multiplicar_matrices_escalar(matriz, escalar):
     resultado = [
         [element * escalar for element in fila]
         for fila in matriz['datos']
     ]
-    return create_matrix(matriz['filas'], matriz['columnas'], resultado)
+    return nueva_matriz(matriz['filas'], matriz['columnas'], resultado)
 
 
-def obtener_determinante(matriz):
+def calcular_determinante(matriz):
     if matriz['filas'] != matriz['columnas']:
         raise ValueError("El determinante solo se puede calcular para matrices cuadradas")
 
@@ -116,18 +127,18 @@ def obtener_determinante(matriz):
             return [[datos_matriz[i][j] for j in range(len(datos_matriz)) if j != columna]
                     for i in range(len(datos_matriz)) if i != fila]
 
-        return sum((-1) ** c * datos[0][c] * obtener_determinante(
-            create_matrix(matriz['filas'] - 1, matriz['columnas'] - 1, submatriz(datos, 0, c))
+        return sum((-1) ** c * datos[0][c] * calcular_determinante(
+            nueva_matriz(matriz['filas'] - 1, matriz['columnas'] - 1, submatriz(datos, 0, c))
         ) for c in range(matriz['columnas']))
     except Exception as e:
         raise ValueError(f"Error al calcular el determinante: {e}")
 
 
-def obtener_inversa(matriz, metodo="adjuncion"):
+def calcular_inversa(matriz, metodo="adjuncion"):
     if matriz['filas'] != matriz['columnas']:
         raise ValueError("La inversa solo se puede calcular para matrices cuadradas")
 
-    determinante = obtener_determinante(matriz)
+    determinante = calcular_determinante(matriz)
     if determinante == 0:
         raise ValueError("La matriz no tiene inversa porque su determinante es 0")
 
@@ -137,15 +148,15 @@ def obtener_inversa(matriz, metodo="adjuncion"):
 
     if metodo == "a":
         try:
-            adjunta = [[(-1) ** (i + j) * obtener_determinante(
-                create_matrix(n - 1, n - 1, [fila[:j] + fila[j + 1:] for fila in (datos[:i] + datos[i + 1:])])
+            adjunta = [[(-1) ** (i + j) * calcular_determinante(
+                nueva_matriz(n - 1, n - 1, [fila[:j] + fila[j + 1:] for fila in (datos[:i] + datos[i + 1:])])
             ) for j in range(n)] for i in range(n)]
 
             print("Paso 1: Calcular la matriz adjunta.")
             print('\n'.join([' '.join(map(str, fila)) for fila in adjunta]))
             print("Paso 2: Dividir cada elemento de la adjunta por el determinante.")
             inversa = [[Fraction(adjunta[j][i], determinante) for j in range(n)] for i in range(n)]
-            return create_matrix(n, n, inversa)
+            return nueva_matriz(n, n, inversa)
         except Exception as e:
             raise ValueError(f"Error al calcular la inversa por adjunción: {e}")
 
@@ -182,7 +193,7 @@ def obtener_inversa(matriz, metodo="adjuncion"):
             pasos.append("Resultado final:")
             pasos.append('\n'.join([' '.join(map(str, fila)) for fila in inversa]))
             print("\n".join(pasos))
-            return create_matrix(n, n, inversa)
+            return nueva_matriz(n, n, inversa)
         except Exception as e:
             raise ValueError(f"Error al calcular la inversa por Gauss-Jordan: {e}")
 
@@ -190,10 +201,10 @@ def obtener_inversa(matriz, metodo="adjuncion"):
         raise ValueError("Método no reconocido. Use 'adjuncion' o 'gauss-jordan'")
 
 
-def eliminacion_gauss_jordan(matriz):
+def eliminar_gauss_jordan(matriz):
     n = matriz['filas']
     m = matriz['columnas']
-    datos = [fila[:] for fila in matriz['datos']]  # Copy of the matrix
+    datos = [fila[:] for fila in matriz['datos']]
     pasos = []
 
     for i in range(n):
@@ -219,12 +230,7 @@ def eliminacion_gauss_jordan(matriz):
     pasos.append("Resultado final:")
     pasos.append('\n'.join([' '.join(map(str, fila)) for fila in datos]))
     print("\n".join(pasos))
-    return create_matrix(n, m, datos)
-
-
-def copiar_matriz(matriz):
-    return create_matrix(matriz['filas'], matriz['columnas'],
-                         [fila[:] for fila in matriz['datos']])
+    return nueva_matriz(n, m, datos)
 
 
 def resolver_cramer(matriz_aumentada):
@@ -237,10 +243,10 @@ def resolver_cramer(matriz_aumentada):
     A_datos = [fila[:-1] for fila in datos]
     b_datos = [[fila[-1]] for fila in datos]
 
-    A = create_matrix(n, n, A_datos)
-    b = create_matrix(n, 1, b_datos)
+    A = nueva_matriz(n, n, A_datos)
+    b = nueva_matriz(n, 1, b_datos)
 
-    det_A = obtener_determinante(A)
+    det_A = calcular_determinante(A)
     if det_A == 0:
         raise ValueError("El determinante de A es 0, el sistema no tiene solución única")
 
@@ -248,12 +254,12 @@ def resolver_cramer(matriz_aumentada):
     explicacion = []
 
     for i in range(n):
-        A_i = copiar_matriz(A)
+        A_i = duplicar_matriz(A)
 
         for j in range(n):
             A_i['datos'][j][i] = b['datos'][j][0]
 
-        det_A_i = obtener_determinante(A_i)
+        det_A_i = calcular_determinante(A_i)
 
         x_i = Fraction(det_A_i, det_A)
         soluciones.append(x_i)
@@ -263,10 +269,14 @@ def resolver_cramer(matriz_aumentada):
     return soluciones, explicacion
 
 
-# Función principal
+######################################################
+################## Función Princiapl #################
+######################################################
+
 def main():
     while True:
-        print("\nCalculadora de Algebra Linear")
+        print("\nCalculadora de Álgebra Lineal")
+        print("Seleccione una operación:")
         print("1. Sumar matrices")
         print("2. Restar matrices")
         print("3. Multiplicar matrices/escalares")
@@ -299,10 +309,10 @@ def main():
                 # Realizar las sumas secuencialmente
                 for i in range(1, len(operandos)):
                     try:
-                        nuevo_resultado = suma_matrices(resultado, operandos[i])
-                        resultado_str = matrix_to_str(resultado)
-                        operando_str = matrix_to_str(operandos[i])
-                        nuevo_resultado_str = matrix_to_str(nuevo_resultado)
+                        nuevo_resultado = sumar_matrices(resultado, operandos[i])
+                        resultado_str = matriz_string(resultado)
+                        operando_str = matriz_string(operandos[i])
+                        nuevo_resultado_str = matriz_string(nuevo_resultado)
 
                         pasos.append(f"{resultado_str}\n+\n{operando_str}\n=\n{nuevo_resultado_str}\n")
                         resultado = nuevo_resultado
@@ -316,7 +326,7 @@ def main():
                     for paso in pasos:
                         print(paso)
                     print("\nRESULTADO:")
-                    print(matrix_to_str(resultado))
+                    print(matriz_string(resultado))
 
             case '2':  # Resta de matrices
                 try:
@@ -339,10 +349,10 @@ def main():
                 # Realizar las restas secuencialmente
                 for i in range(1, len(operandos)):
                     try:
-                        nuevo_resultado = resta_matrices(resultado, operandos[i])
-                        resultado_str = matrix_to_str(resultado)
-                        operando_str = matrix_to_str(operandos[i])
-                        nuevo_resultado_str = matrix_to_str(nuevo_resultado)
+                        nuevo_resultado = restar_matrices(resultado, operandos[i])
+                        resultado_str = matriz_string(resultado)
+                        operando_str = matriz_string(operandos[i])
+                        nuevo_resultado_str = matriz_string(nuevo_resultado)
 
                         pasos.append(f"{resultado_str}\n-\n{operando_str}\n=\n{nuevo_resultado_str}\n")
                         resultado = nuevo_resultado
@@ -356,7 +366,7 @@ def main():
                     for paso in pasos:
                         print(paso)
                     print("\nRESULTADO:")
-                    print(matrix_to_str(resultado))
+                    print(matriz_string(resultado))
 
             case '3':  # Multiplicación
                 try:
@@ -372,7 +382,7 @@ def main():
                 for i in range(contador):
                     opcion_multi = input(f"El operando {i + 1} es escalar (e) o matriz (m)? ").lower()
                     if  opcion_multi == 'e':
-                        operandos.append(get_escalar())
+                        operandos.append(input_escalar())
                     elif opcion_multi == 'm':
                         operandos.append(input_matriz((i + 1)))
                     else:
@@ -401,13 +411,13 @@ def main():
                                 # Escalar * Matriz
                                 escalar = resultado
                                 matriz = operandos[i]
-                                nuevo_resultado = multiplicacion_escalar(matriz, escalar)
+                                nuevo_resultado = multiplicar_matrices_escalar(matriz, escalar)
                                 explicacion = []
                                 simbolo_op = '× scalar'
                             else:
                                 # Matriz * Escalar
                                 escalar = operandos[i]
-                                nuevo_resultado = multiplicacion_escalar(resultado, escalar)
+                                nuevo_resultado = multiplicar_matrices_escalar(resultado, escalar)
                                 explicacion = []
                                 simbolo_op = '× scalar'
                         else:
@@ -420,11 +430,11 @@ def main():
                             pasos.extend(explicacion)
 
                         # Formato de cadenas para mostrar
-                        resultado_str = resultado if isinstance(resultado, (int, float)) else matrix_to_str(resultado)
-                        operando_str = operandos[i] if isinstance(operandos[i], (int, float)) else matrix_to_str(
+                        resultado_str = resultado if isinstance(resultado, (int, float)) else matriz_string(resultado)
+                        operando_str = operandos[i] if isinstance(operandos[i], (int, float)) else matriz_string(
                             operandos[i])
                         nuevo_resultado_str = nuevo_resultado if isinstance(nuevo_resultado,
-                                                                            (int, float)) else matrix_to_str(
+                                                                            (int, float)) else matriz_string(
                             nuevo_resultado)
 
                         pasos.append(f"{resultado_str}\n{simbolo_op}\n{operando_str}\n=\n{nuevo_resultado_str}\n")
@@ -442,12 +452,12 @@ def main():
                     if isinstance(resultado, (int, float)):
                         print(resultado)
                     else:
-                        print(matrix_to_str(resultado))
+                        print(matriz_string(resultado))
 
             case '4':
                 matriz = input_matriz()
                 try:
-                    determinante = obtener_determinante(matriz)
+                    determinante = calcular_determinante(matriz)
                     print(f"El determinante de la matriz es: {determinante}")
                 except ValueError as e:
                     print(f"Error: {e}")
@@ -456,18 +466,21 @@ def main():
                 matriz = input_matriz()
                 metodo = input("Desea usar adjuncion o gauss-jordan (responda con a o g respectivamente): ").lower()
                 try:
-                    inversa = obtener_inversa(matriz, metodo)
+                    inversa = calcular_inversa(matriz, metodo)
                     print("La inversa de la matriz es:")
-                    print(matrix_to_str(inversa))
+                    print(matriz_string(inversa))
                 except ValueError as e:
                     print(f"Error: {e}")
 
             case '6':
                 matriz = input_matriz()
                 try:
-                    resultado = eliminacion_gauss_jordan(matriz)
-                    print("\nResultado de la eliminación de Gauss-Jordan:")
-                    print(matrix_to_str(resultado))
+                    resultado = eliminar_gauss_jordan(matriz)
+                    print("\nSolución del sistema:")
+                    # Mostrar x_n resultantes
+                    for i in range(resultado['filas']):
+                        print(f"x_{i + 1} = {resultado['datos'][i][-1]}")
+
                 except ValueError as e:
                     print(f"Error: {e}")
 
@@ -488,14 +501,14 @@ def main():
                     print("\nSOLUCIÓN PASO A PASO:")
                     # Mostrar la matriz original
                     print("Matriz aumentada [A | b]:")
-                    print(matrix_to_str(matriz_aumentada))
+                    print(matriz_string(matriz_aumentada))
 
                     # Extraer matriz A para calcular su determinante
                     n = matriz_aumentada['filas']
                     A_datos = [fila[:-1] for fila in matriz_aumentada['datos']]
-                    A = create_matrix(n, n, A_datos)
+                    A = nueva_matriz(n, n, A_datos)
 
-                    det_A = obtener_determinante(A)
+                    det_A = calcular_determinante(A)
                     print(f"\nDeterminante de la matriz de coeficientes A: {det_A}")
 
                     if det_A == 0:
